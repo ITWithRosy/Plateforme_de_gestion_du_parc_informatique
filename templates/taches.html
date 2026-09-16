@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% block title %}Tâches Automatisées - Isocoul{% endblock %}
+{% block content %}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Tâches Automatisées</h2>
+            <p class="text-muted small mb-0">Planification et exécution des scripts de maintenance et sauvegardes</p>
+        </div>
+        <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#modalNouvelleTache">
+            <i class="bi bi-plus-lg"></i> Nouvelle tâche
+        </button>
+    </div>
+
+    <!-- cartes KPI -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold">Total Tâches</span>
+                        <h3 class="fw-bold mb-0 mt-1">{{ total }}</h3>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3">
+                        <i class="bi bi-list-task fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold">En Attente</span>
+                        <h3 class="fw-bold text-warning mb-0 mt-1">{{ en_attente }}</h3>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3">
+                        <i class="bi bi-clock-history fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold">Exécutées avec Succès</span>
+                        <h3 class="fw-bold text-success mb-0 mt-1">{{ terminees }}</h3>
+                    </div>
+                    <div class="bg-success bg-opacity-10 text-success rounded-circle p-3">
+                        <i class="bi bi-check2-all fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau des tâches -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Nom de la tâche</th>
+                            <th>Script / Commande</th>
+                            <th>Description</th>
+                            <th>Date / Heure</th>
+                            <th>Statut</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in taches %}
+                        <tr>
+                            <td class="ps-4 fw-bold text-dark">
+                                <i class="bi bi-gear-wide-connected me-2 text-primary"></i>{{ item.nom }}
+                            </td>
+                            <td><code class="bg-light text-danger px-2 py-1 rounded">{{ item.script }}</code></td>
+                            <td class="text-muted small">{{ item.description or 'Aucune description' }}</td>
+                            <td class="text-muted small">
+                                {% if item.dateExecution %}
+                                    <i class="bi bi-calendar3 me-1"></i>{{ item.dateExecution.strftime('%d/%m/%Y %H:%M') }}
+                                {% else %}
+                                    --
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.statut in ['Terminé', 'Succès'] %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+                                        <i class="bi bi-check-circle me-1"></i> {{ item.statut }}
+                                    </span>
+                                {% elif 'Échec' in item.statut %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2">
+                                        <i class="bi bi-x-circle me-1"></i> {{ item.statut }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2">
+                                        <i class="bi bi-hourglass-split me-1"></i> {{ item.statut }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <!-- Bouton Exécuter -->
+                                <form action="{{ url_for('taches.executer_tache', id=item.idTache) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-success btn-sm rounded-circle me-1" title="Lancer maintenant">
+                                        <i class="bi bi-play-fill"></i>
+                                    </button>
+                                </form>
+
+                                <!-- Bouton Modifier -->
+                                <button type="button" class="btn btn-outline-primary btn-sm rounded-circle me-1" data-bs-toggle="modal" data-bs-target="#modalEditerTache{{ item.idTache }}" title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+
+                                <!-- Bouton Supprimer -->
+                                <form action="{{ url_for('taches.supprimer_tache', id=item.idTache) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer cette tâche ?');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-circle" title="Supprimer">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+
+                                <!-- Modale d'Édition générée dynamiquement pour chaque tâche -->
+                                <div class="modal fade text-start" id="modalEditerTache{{ item.idTache }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Modifier la Tâche</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <form action="{{ url_for('taches.modifier_tache', id=item.idTache) }}" method="POST">
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-semibold">Nom de la tâche</label>
+                                                        <input type="text" name="nom" class="form-control" value="{{ item.nom }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-semibold">Chemin du script</label>
+                                                        <input type="text" name="script" class="form-control" value="{{ item.script }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-semibold">Description</label>
+                                                        <textarea name="description" class="form-control" rows="2">{{ item.description or '' }}</textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                                                    <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                Aucune tâche automatisée enregistrée.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modale d'ajout -->
+<div class="modal fade" id="modalNouvelleTache" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>Nouvelle Tâche Automatique</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('taches.ajouter_tache') }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nom de la tâche</label>
+                        <input type="text" name="nom" class="form-control" placeholder="ex: Nettoyage des logs système" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Chemin du script</label>
+                        <input type="text" name="script" class="form-control" placeholder="ex: /var/scripts/clean_logs.sh" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Description</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="Explication succincte du rôle de ce script..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer la tâche</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,130 @@
+:root {
+    --sidebar-bg: #1a2b4c;      
+    --sidebar-hover: rgba(255, 255, 255, 0.08);
+    --sidebar-active: rgba(255, 255, 255, 0.15);
+    --main-bg: #f8fafc;        
+    --border-color: #e2e8f0;
+}
+
+body {
+    background-color: var(--main-bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    min-height: 100vh;
+    margin: 0;
+}
+
+
+.sidebar {
+    width: 240px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: var(--sidebar-bg);
+    color: #ffffff;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar .brand {
+    padding: 1.25rem 1.5rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #38bdf8;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar .nav-pills .nav-link {
+    color: #94a3b8;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-radius: 0;
+    transition: all 0.2s ease;
+}
+
+.sidebar .nav-pills .nav-link:hover {
+    color: #ffffff;
+    background-color: var(--sidebar-hover);
+}
+
+.sidebar .nav-pills .nav-link.active {
+    color: #ffffff;
+    background-color: var(--sidebar-active);
+    font-weight: 600;
+    border-left: 4px solid #38bdf8;
+}
+
+
+.main-wrapper {
+    margin-left: 240px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.top-header {
+    height: 60px;
+    background-color: #ffffff;
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.main-content {
+    padding: 1.75rem 2rem;
+    flex-grow: 1;
+}
+
+
+.stat-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.25rem;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.stat-card .title {
+    color: #64748b;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.stat-card .number {
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.badge-user {
+    width: 36px;
+    height: 36px;
+    background-color: #2563eb;
+    color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.notification-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #ef4444;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+}

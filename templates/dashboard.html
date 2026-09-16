@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - Isocoul{% endblock %}
+{% block content %}
+
+<!-- BANDEAU DE SANTÉ GLOBALE -->
+<div class="mb-4">
+    {% if hosts_down == 0 and alertes_critiques == 0 %}
+        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center m-0" role="alert">
+            <i class="bi bi-check-circle-fill fs-4 me-3"></i>
+            <div>
+                <strong>Système Opérationnel :</strong> Tous les équipements surveillés fonctionnent normalement et aucun incident majeur n'est détecté.
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-danger border-0 shadow-sm d-flex align-items-center justify-content-between m-0" role="alert">
+            <div class="d-flex align-items-center me-3">
+                <i class="bi bi-exclamation-triangle-fill fs-4 me-3 flex-shrink-0"></i>
+                <div>
+                    <strong>Attention requise :</strong> {{ hosts_down }} équipement(s) hors ligne et {{ alertes_critiques }} alerte(s) critique(s) active(s).
+                </div>
+            </div>
+            <button type="button" class="btn-close ms-auto flex-shrink-0" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
+</div>
+
+<!-- CARTES KPI PRINCIPALES -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="title">Équipements (Zabbix)</div>
+            <div class="number text-primary">{{ equipements_count | default(0) }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="title">Alertes critiques</div>
+            <div class="number text-danger">{{ alertes_count | default(0) }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="title">Utilisateurs</div>
+            <div class="number text-success">{{ utilisateurs_count | default(1) }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="title">Tâches automatisées</div>
+            <div class="number text-warning">{{ taches_count | default(0) }}</div>
+        </div>
+    </div>
+</div>
+
+<!--BARRES D'ÉTAT -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-bold py-2">
+                <i class="bi bi-hdd-network text-primary me-2"></i>Disponibilité des hôtes
+            </div>
+            <div class="card-body p-0 d-flex text-center text-white fw-bold" style="min-height: 65px;">
+                <div class="flex-fill bg-success d-flex flex-column justify-content-center p-2">
+                    <span class="fs-5">{{ hosts_up }}</span>
+                    <span class="small fw-normal" style="font-size: 0.75rem;">Disponible</span>
+                </div>
+                <div class="flex-fill bg-danger d-flex flex-column justify-content-center p-2">
+                    <span class="fs-5">{{ hosts_down }}</span>
+                    <span class="small fw-normal" style="font-size: 0.75rem;">Non disp.</span>
+                </div>
+                <div class="flex-fill bg-secondary d-flex flex-column justify-content-center p-2 opacity-75">
+                    <span class="fs-5">{{ equipements_count }}</span>
+                    <span class="small fw-normal" style="font-size: 0.75rem;">Total</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-bold py-2">
+                <i class="bi bi-shield-exclamation text-danger me-2"></i>Sévérité des problèmes
+            </div>
+            <div class="card-body p-0 d-flex text-center text-white fw-bold" style="min-height: 65px;">
+                <div class="flex-fill d-flex flex-column justify-content-center p-2" style="background-color: #e45959;">
+                    <span class="fs-5">{{ alertes_critiques }}</span>
+                    <span class="small fw-normal" style="font-size: 0.75rem;">Critique</span>
+                </div>
+                <div class="flex-fill d-flex flex-column justify-content-center p-2" style="background-color: #ff9800;">
+                    <span class="fs-5">{{ alertes_moyen }}</span>
+                    <span class="small fw-normal" style="font-size: 0.75rem;">Moyen</span>
+                </div>
+                <div class="flex-fill d-flex flex-column justify-content-center p-2" style="background-color: #2196f3;">
+                    <span class="fs-5">{{ alertes_info }}</span>
+                    <span class="small fw-normal" style="font-size: 0.75rem;">Info</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--TABLEAU ZABBIX + BLOC PFSENSE -->
+<div class="row g-3 mb-4">
+    <!-- Équipements Zabbix -->
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h5 class="fw-bold text-dark mb-3">
+                    <i class="bi bi-hdd-stack text-primary me-2"></i>Équipements surveillés (Zabbix)
+                </h5>
+                
+                {% if equipements_zabbix %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nom de l'équipement</th>
+                                    <th>Adresse IP</th>
+                                    <th>Statut Zabbix</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for eq in equipements_zabbix %}
+                                <tr>
+                                    <td class="fw-semibold">{{ eq.nom or eq.host }}</td>
+                                    <td><code>{{ eq.ip }}</code></td>
+                                    <td>
+                                        {% if eq.statut == 'UP' or eq.status == 'UP' %}
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                                <i class="bi bi-check-circle-fill me-1"></i>En ligne (UP)
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                                <i class="bi bi-x-circle-fill me-1"></i>Hors ligne (DOWN)
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="p-4 text-center rounded bg-light border border-dashed">
+                        <i class="bi bi-exclamation-circle text-warning fs-4 d-block mb-2"></i>
+                        <p class="text-muted mb-0">
+                            Aucun équipement récupéré. (Vérifiez la connexion Zabbix)
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sécurité & Pare-feu (pfSense) -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="bi bi-shield-check text-success me-2"></i>Réseau & Pare-feu (pfSense)
+                    </h5>
+                    {% if pfsense and pfsense.connected %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">En ligne</span>
+                    {% else %}
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Hors ligne</span>
+                    {% endif %}
+                </div>
+                
+                <!-- Interface WAN -->
+                <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-light rounded">
+                    <span class="small fw-semibold">Interface WAN</span>
+                    {% if pfsense and pfsense.wan_status == 'UP' %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                            <i class="bi bi-check-circle-fill me-1"></i>UP
+                        </span>
+                    {% else %}
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                            <i class="bi bi-x-circle-fill me-1"></i>DOWN
+                        </span>
+                    {% endif %}
+                </div>
+
+                <!-- Interface LAN -->
+                <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-light rounded">
+                    <span class="small fw-semibold">Interface LAN</span>
+                    {% if pfsense and pfsense.lan_status == 'UP' %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                            <i class="bi bi-check-circle-fill me-1"></i>UP
+                        </span>
+                    {% else %}
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                            <i class="bi bi-x-circle-fill me-1"></i>DOWN
+                        </span>
+                    {% endif %}
+                </div>
+
+                <!-- Sessions OpenVPN -->
+                <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-light rounded">
+                    <span class="small fw-semibold">Sessions OpenVPN</span>
+                    <span class="fw-bold text-dark">{{ pfsense.vpn_users if pfsense else 0 }}</span>
+                </div>
+
+                <!-- Paquets bloqués (24h) -->
+                <div class="d-flex align-items-center justify-content-between p-2 bg-light rounded">
+                    <span class="small fw-semibold">Paquets bloqués (24h)</span>
+                    <span class="fw-bold text-danger">{{ pfsense.blocked_today if pfsense else 0 }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CPU / RAM METRIQUES -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm p-4 text-center">
+            <h5 class="fw-bold mb-3">Utilisation CPU Moyenne (%)</h5>
+            <div class="py-2 text-primary fs-1 fw-bold">{{ cpu_moyen }}%</div>
+            <div class="progress mt-2" style="height: 6px;">
+                <div class="progress-bar bg-primary" role="progressbar" aria-valuenow="{{ cpu_moyen }}" aria-valuemin="0" aria-valuemax="100" data-width="{{ cpu_moyen }}"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm p-4 text-center">
+            <h5 class="fw-bold mb-3">Utilisation RAM Moyenne (%)</h5>
+            <div class="py-2 text-info fs-1 fw-bold">{{ ram_moyenne }}%</div>
+            <div class="progress mt-2" style="height: 6px;">
+                <div class="progress-bar bg-info" role="progressbar" aria-valuenow="{{ ram_moyenne }}" aria-valuemin="0" aria-valuemax="100" data-width="{{ ram_moyenne }}"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll('.progress-bar[data-width]').forEach(function(bar) {
+            bar.style.width = bar.getAttribute('data-width') + '%';
+        });
+    });
+</script>
+
+<!-- ALERTES ET ACTIVITÉS -->
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm p-4 h-100">
+            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-bell text-danger me-2"></i>Dernières alertes</h5>
+            
+            {% if alertes_display %}
+                {% for alerte in alertes_display %}
+                    <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+                        <span class="small fw-semibold text-dark">{{ alerte.titre }}</span>
+                        <span class="badge 
+                            {% if alerte.niveau == 'Critique' %}bg-danger-subtle text-danger border border-danger-subtle
+                            {% elif alerte.niveau == 'Moyen' or alerte.niveau == 'Avertissement' %}bg-warning-subtle text-warning border border-warning-subtle
+                            {% else %}bg-info-subtle text-info border border-info-subtle{% endif %}">
+                            {{ alerte.niveau }}
+                        </span>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted small mb-0">Aucun incident détecté pour le moment.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% if current_user.is_authenticated and current_user.role.nomRole == 'Administrateur' %}
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm p-4 h-100">
+            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-clock-history text-primary me-2"></i>Dernières activités</h5>
+            
+            {% for activite in dernieres_activites %}
+                <div class="d-flex align-items-center gap-2 mb-2 pb-2 border-bottom">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                        {{ activite.resultat or 'Succès' }}
+                    </span>
+                    <div class="d-flex flex-column">
+                        <span class="small fw-semibold text-dark">{{ activite.action }}</span>
+                        <span class="text-muted" style="font-size: 0.75rem;">
+                            {{ activite.description or '' }} — {{ activite.dateCreation.strftime('%d/%m/%Y %H:%M') if activite.dateCreation else '' }}
+                        </span>
+                    </div>
+                </div>
+            {% else %}
+                <p class="text-muted small mb-0">Aucune activité récente enregistrée.</p>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard - Plateforme de Supervision{% endblock %}</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- BARRE NAVIGALE SÉCURISÉE -->
+    <aside class="sidebar">
+        <div class="brand d-flex align-items-center justify-content-center px-3 py-3 border-bottom border-secondary mb-3" style="border-color: rgba(255, 255, 255, 0.1) !important;">
+            <a href="{{ url_for('dashboard.dashboard') }}" class="d-flex align-items-center text-decoration-none">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" 
+                     alt="Logo"
+                     style="height: 55px; width: auto; max-width: 100%; object-fit: contain; filter: brightness(0) invert(1); transform: scale(1.3);">
+            </a>
+        </div>
+        
+        <ul class="nav nav-pills flex-column mt-2">
+            <li class="nav-item">
+                <a href="{{ url_for('dashboard.dashboard') }}" 
+                   class="nav-link {% if 'dashboard' in request.path or request.path == '/' %}active{% endif %}">
+                    <i class="bi bi-speedometer2 fs-6"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('equipements.equipements') }}" 
+                   class="nav-link {% if 'equipement' in request.path %}active{% endif %}">
+                    <i class="bi bi-hdd-network fs-6"></i> Équipements
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('alertes.alertes') }}" 
+                   class="nav-link {% if 'alerte' in request.path %}active{% endif %}">
+                    <i class="bi bi-exclamation-triangle fs-6"></i> Alertes
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('rapports.rapports') }}" 
+                   class="nav-link {% if 'rapport' in request.path %}active{% endif %}">
+                    <i class="bi bi-graph-up fs-6"></i> Rapports
+                </a>
+            </li>
+
+            <!-- MENU RÉSERVÉ AUX ADMINISTRATEURS -->
+            {% if current_user.is_authenticated and current_user.role and current_user.role.nomRole == 'Administrateur' %}
+            <hr class="text-white-50 my-2 mx-3">
+            <li class="nav-item">
+                <a href="{{ url_for('journal.journal') }}" 
+                   class="nav-link {% if 'journal' in request.path or 'journaux' in request.path %}active{% endif %}">
+                    <i class="bi bi-journal-text fs-6"></i> Journaux
+                </a>
+            </li> 
+            <li class="nav-item">
+                <a href="{{ url_for('taches.taches') }}" 
+                   class="nav-link {% if 'tache' in request.path %}active{% endif %}">
+                    <i class="bi bi-list-task fs-6"></i> Tâches
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('utilisateurs.utilisateurs') }}" 
+                   class="nav-link {% if 'utilisateur' in request.path %}active{% endif %}">
+                    <i class="bi bi-people fs-6"></i> Utilisateurs
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="top-header">
+            <div class="text-muted small">
+                <i class="bi bi-calendar3 me-2"></i>
+                <span id="header-date"></span>
+            </div>
+
+            <div class="d-flex align-items-center gap-3">
+                <button onclick="window.location.reload();" class="btn btn-sm btn-light border shadow-sm text-secondary fw-semibold d-flex align-items-center gap-1" title="Actualiser les données">
+                    <i class="bi bi-arrow-clockwise fs-6"></i>
+                    <span class="d-none d-md-inline">Rafraîchir</span>
+                </button>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline-danger shadow-sm fw-semibold d-flex align-items-center gap-1" title="Se déconnecter">
+                    <i class="bi bi-box-arrow-right fs-6"></i>
+                    <span class="d-none d-md-inline">Déconnexion</span>
+                </a>
+
+                <!-- NOTIFICATIONS ET DROITS -->
+                <div class="dropdown">
+                    <a href="#" class="text-secondary position-relative d-inline-flex align-items-center text-decoration-none p-1" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-bell fs-5"></i>
+                        <span class="notification-dot"></span>
+                    </a>
+                    
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-2 mt-2" aria-labelledby="notifDropdown" style="width: 300px; z-index: 1050;">
+                        <li class="dropdown-header fw-bold text-dark d-flex justify-content-between align-items-center pb-2 border-bottom">
+                            <span>Centre de Notifications</span>
+                            <span class="badge bg-primary-subtle text-primary" style="font-size: 0.7rem;">Système</span>
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item d-flex align-items-start py-2 px-2 rounded mt-1" href="{{ url_for('alertes.alertes') }}">
+                                <i class="bi bi-exclamation-triangle-fill text-danger me-2 mt-1 fs-6"></i>
+                                <div class="text-wrap">
+                                    <strong class="d-block small text-dark">Incidents réseau</strong>
+                                    <span class="text-muted d-block" style="font-size: 0.75rem;">Consulter les alertes critiques actives.</span>
+                                </div>
+                            </a>
+                        </li>
+
+                        <!-- Masqué si non-administrateur -->
+                        {% if current_user.is_authenticated and current_user.role and current_user.role.nomRole == 'Administrateur' %}
+                        <li>
+                            <a class="dropdown-item d-flex align-items-start py-2 px-2 rounded" href="{{ url_for('taches.taches') }}">
+                                <i class="bi bi-check-circle-fill text-success me-2 mt-1 fs-6"></i>
+                                <div class="text-wrap">
+                                    <strong class="d-block small text-dark">Tâches automatiques</strong>
+                                    <span class="text-muted d-block" style="font-size: 0.75rem;">Suivi des sauvegardes et scripts.</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li class="border-top pt-2 mt-1 text-center">
+                            <a href="{{ url_for('journal.journal') }}" class="small text-primary text-decoration-none fw-semibold">
+                                Accéder aux journaux d'audit <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <!-- INFO UTILISATEUR CONNECTÉ -->
+                <div class="text-end">
+                    <div class="fw-bold small text-dark" style="line-height: 1.2;">
+                        {% if current_user and current_user.is_authenticated %}
+                            {{ current_user.prenom }} {{ current_user.nom }}
+                        {% else %}
+                            Invité
+                        {% endif %}
+                    </div>
+                    <div class="text-muted" style="font-size: 0.75rem;">
+                        {% if current_user and current_user.is_authenticated and current_user.role %}
+                            {{ current_user.role.nomRole }}
+                        {% else %}
+                            Utilisateur
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="badge-user">
+                    {% if current_user and current_user.is_authenticated and current_user.prenom and current_user.nom %}
+                        {{ current_user.prenom[0] | upper }}{{ current_user.nom[0] | upper }}
+                    {% else %}
+                        U
+                    {% endif %}
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }} alert-dismissible fade show mb-4" role="alert">
+                    <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const dateElement = document.getElementById("header-date");
+            if (dateElement) {
+                const now = new Date();
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+                dateElement.textContent = now.toLocaleDateString('fr-FR', options);
+            }
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

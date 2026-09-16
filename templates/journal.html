@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Journaux & Logs - Isocoul{% endblock %}
+{% block content %}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Journal d'Audit & Traçabilité</h2>
+            <p class="text-muted small mb-0">Registre des accès, activités utilisateurs et opérations système</p>
+        </div>
+        <a href="{{ url_for('journal.exporter_journal') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+            <i class="bi bi-download"></i> Exporter les logs (CSV)
+        </a>
+    </div>
+
+    <!-- Filtre Calendrier et Recherche -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body bg-light rounded-3 p-3">
+            <form method="GET" action="{{ url_for('journal.journal') }}" class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label text-muted small fw-semibold mb-1">Période du</label>
+                    <input type="date" name="date_debut" value="{{ date_debut or '' }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-muted small fw-semibold mb-1">De (Heure)</label>
+                    <input type="time" name="heure_debut" value="{{ heure_debut or '00:00' }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label text-muted small fw-semibold mb-1">Au</label>
+                    <input type="date" name="date_fin" value="{{ date_fin or '' }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-muted small fw-semibold mb-1">À (Heure)</label>
+                    <input type="time" name="heure_fin" value="{{ heure_fin or '23:59' }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2 d-flex gap-1">
+                    <button type="submit" class="btn btn-primary btn-sm w-100 fw-semibold">
+                        <i class="bi bi-filter me-1"></i> Filtrer
+                    </button>
+                    <a href="{{ url_for('journal.journal') }}" class="btn btn-outline-secondary btn-sm" title="Réinitialiser">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tableau des logs -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Horodatage (UTC)</th>
+                            <th>Utilisateur</th>
+                            <th>Action Réalisée</th>
+                            <th>Résultat</th>
+                            <th>Adresse IP</th>
+                            <th>Détails de l'Opération</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs_list %}
+                        <tr>
+                            <td class="ps-4 text-muted small fw-medium">
+                                <i class="bi bi-clock me-1 text-secondary"></i>
+                                {{ log.dateCreation.strftime('%d/%m/%Y %H:%M:%S') if log.dateCreation else 'N/A' }}
+                            </td>
+                            <td class="fw-bold text-dark">
+                                {% if log.utilisateur %}
+                                    <i class="bi bi-person-circle me-1 text-primary"></i>
+                                    {{ log.utilisateur.prenom }} {{ log.utilisateur.nom }}
+                                {% else %}
+                                    <span class="text-muted">ID: {{ log.idUtilisateur }}</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="fw-semibold text-dark">{{ log.action }}</span></td>
+                            <td>
+                                {% if log.resultat == 'Succès' %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                        <i class="bi bi-check-circle me-1"></i> Succès
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                                        <i class="bi bi-x-circle me-1"></i> {{ log.resultat }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td><code class="bg-light text-secondary px-2 py-1 rounded">{{ log.adresseIP }}</code></td>
+                            <td class="text-muted small">{{ log.description or '-' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="bi bi-shield-x fs-2 d-block mb-2 text-secondary"></i>
+                                Aucun journal enregistre pour les critères sélectionnés.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

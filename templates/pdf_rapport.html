@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ rapport.titre }}</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 2cm;
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            color: #333;
+            font-size: 12px;
+        }
+        .header {
+            border-bottom: 2px solid #0d6efd;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #0d6efd;
+            margin: 0;
+            font-size: 20px;
+        }
+        .meta-info {
+            margin-bottom: 20px;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .kpi-container {
+            margin-bottom: 20px;
+        }
+        .kpi-box {
+            display: inline-block;
+            width: 30%;
+            background-color: #e9ecef;
+            padding: 10px;
+            text-align: center;
+            border-radius: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f3f5;
+            font-weight: bold;
+        }
+        .status-up { color: #198754; font-weight: bold; }
+        .status-down { color: #dc3545; font-weight: bold; }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #6c757d;
+            border-top: 1px solid #dee2e6;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <table style="width: 100%; border: none; margin: 0; padding: 0;">
+            <tr>
+                <td style="border: none; text-align: left; vertical-align: middle; width: 100%;">
+                    <h1 style="color: #0d6efd; margin: 0; font-size: 20px;">Rapport d'Inventaire & Supervision</h1>
+                    <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 12px;">Plateforme de Gestion du Parc Informatique - ISOCOUL</p>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="meta-info">
+        <strong>Titre du rapport :</strong> {{ rapport.titre }}<br>
+        <strong>Type :</strong> {{ rapport.type }}<br>
+        <strong>Date de génération :</strong> {{ rapport.dateGeneration.strftime('%d/%m/%Y à %H:%M') if rapport.dateGeneration else '--' }}<br>
+        <strong>Généré par :</strong> {{ current_user.nom if (current_user and current_user.is_authenticated and current_user.nom) else (current_user.prenom if current_user and current_user.is_authenticated else 'Système') }}
+    </div>
+
+<!-- COMPTEURS / KPI -->
+    <div class="kpi-container">
+        <div class="kpi-box">
+            <strong>Total Équipements</strong><br>
+            <h3>{{ equipements|length }}</h3>
+        </div>
+        <div class="kpi-box">
+            <strong style="color: #198754;">En ligne (UP)</strong><br>
+            <h3>{{ equipements | selectattr('etat', 'in', ['UP', 'actif', 'En ligne', 'online', 'ok']) | list | length }}</h3>
+        </div>
+        <div class="kpi-box">
+            <strong style="color: #dc3545;">Hors ligne (DOWN)</strong><br>
+            <h3>{{ equipements | length - (equipements | selectattr('etat', 'in', ['UP', 'actif', 'En ligne', 'online', 'ok']) | list | length) }}</h3>
+        </div>
+    </div>
+
+    <!-- TABLEAU DES ÉQUIPEMENTS -->
+    <h3>1. État détaillé des équipements</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Adresse IP</th>
+                <th>Type / Système</th>
+                <th>Host ID Zabbix</th>
+                <th>État</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in equipements %}
+            <tr>
+                <td><strong>{{ item.nom }}</strong></td>
+                <td>{{ item.adresseIP }}</td>
+                <td>{{ item.type }}{% if item.systeme %} ({{ item.systeme }}){% endif %}</td>
+                <td>{{ item.hostid_zabbix or 'Non lié' }}</td>
+                <td>
+                    {% if item.etat.lower() in ['up', 'actif', 'en ligne', 'online', 'ok'] %}
+                        <span class="status-up">En ligne</span>
+                    {% else %}
+                        <span class="status-down">{{ item.etat | capitalize }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3>2. Synthèse des Derniers Événements & Alertes</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type / Équipement</th>
+                <th>Événement / Action</th>
+                <th>Statut</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Utilisation de 'journaux' (variable transmise par la route) avec repli sur 'derniers_evenements' -->
+            {% set liste_events = journaux if journaux is defined else derniers_evenements %}
+            {% for evt in liste_events %}
+            <tr>
+                <td>{{ evt.dateCreation.strftime('%d/%m/%Y %H:%M') if evt.dateCreation else '--' }}</td>
+                <td>{{ evt.typeEvenement or evt.equipement or 'Système' }}</td>
+                <td>{{ evt.action or evt.description or '--' }}</td>
+                <td>{{ evt.resultat or evt.statut or 'OK' }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" style="text-align: center; color: #6c757d;">Aucun événement enregistré dans le journal d'audit.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Document d'audit informatique - ISOCOUL
+    </div>
+</body>
+</html>

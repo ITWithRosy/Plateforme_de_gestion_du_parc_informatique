@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+
+{% block title %}Rapports & Statistiques - Isocoul{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Rapports & Synthèses</h2>
+            <p class="text-muted small mb-0">Analyse globale, indicateurs de santé du parc et archivage</p>
+        </div>
+        <div>
+            <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#modalNouveauRapport">
+                <i class="bi bi-file-earmark-plus"></i> Générer un Nouveau Rapport
+            </button>
+        </div>
+    </div>
+
+    <!-- Mini KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small fw-semibold">Équipements Inventoriés</span>
+                        <h3 class="fw-bold mb-0 mt-1">{{ total_equipements }}</h3>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3">
+                        <i class="bi bi-hdd-network fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small fw-semibold">Incidents Critiques</span>
+                        <h3 class="fw-bold text-danger mb-0 mt-1">{{ critiques }}</h3>
+                    </div>
+                    <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-3">
+                        <i class="bi bi-exclamation-octagon fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small fw-semibold">Total Alertes Générées</span>
+                        <h3 class="fw-bold text-warning mb-0 mt-1">{{ total_alertes }}</h3>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3">
+                        <i class="bi bi-bell fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section Graphiques -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm p-4 h-100">
+                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-pie-chart text-primary me-2"></i>Répartition du Parc par Type</h6>
+                <div style="position: relative; height:250px;">
+                    <canvas id="chartTypes"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm p-4 h-100">
+                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-bar-chart-line text-info me-2"></i>Volume d'Alertes par Sévérité</h6>
+                <div style="position: relative; height:250px;">
+                    <canvas id="chartAlertes"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historique des rapports -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3">
+            <h6 class="fw-bold mb-0"><i class="bi bi-archive me-2 text-secondary"></i>Archives des Rapports Générés</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Titre du Rapport</th>
+                            <th>Type</th>
+                            <th>Date de Génération</th>
+                            <th>Fichier</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in rapports %}
+                        <tr>
+                            <td class="ps-4 fw-bold text-dark">
+                                <i class="bi bi-file-earmark-pdf text-danger me-2"></i>{{ r.titre }}
+                            </td>
+                            <td><span class="badge bg-light text-dark border">{{ r.type }}</span></td>
+                            <td class="text-muted small">
+                                {{ r.dateGeneration.strftime('%d/%m/%Y %H:%M') if r.dateGeneration else '--' }}
+                            </td>
+                            <td><code class="bg-light text-secondary px-2 py-1 rounded">{{ r.cheminFichier or 'pdf_genere.pdf' }}</code></td>
+                            <td class="text-end pe-4">
+                                <!-- Bouton pour Télécharger/Re-télécharger le PDF -->
+                                <a href="{{ url_for('rapports.telecharger_rapport', id=r.idRapport) }}" class="btn btn-outline-primary btn-sm rounded-circle me-1" title="Télécharger le PDF">
+                                    <i class="bi bi-download"></i>
+                                </a>
+
+                                <!-- Bouton Supprimer (réservé Admin) -->
+                                {% if current_user.is_authenticated and current_user.role and current_user.role.nomRole == 'Administrateur' %}
+                                <form action="{{ url_for('rapports.supprimer_rapport', id=r.idRapport) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer ce rapport des archives ?');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-circle" title="Supprimer">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                Aucun rapport archivé pour le moment.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Génération -->
+<div class="modal fade" id="modalNouveauRapport" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-plus me-2"></i>Générer un Rapport</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('rapports.generer_rapport') }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Titre du Rapport</label>
+                        <input type="text" name="titre" class="form-control" placeholder="ex: Bilan Mensuel Réseau - Août 2026" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Type de Synthèse</label>
+                        <select name="type" class="form-select">
+                            <option value="Inventaire & Supervision">Inventaire & Supervision</option>
+                            <option value="Audit de Sécurité">Audit de Sécurité</option>
+                            <option value="Statistiques d'Incidents">Statistiques d'Incidents</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-file-earmark-pdf me-1"></i> Générer & Télécharger le PDF
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Divs invisibles pour stocker les données Jinja2 -->
+<div id="data-reports" 
+     data-types-labels='{{ types_labels | tojson }}'
+     data-types-values='{{ types_values | tojson }}'
+     data-critiques="{{ critiques }}"
+     data-avertissements="{{ avertissements }}"
+     data-infos="{{ infos }}">
+</div>
+
+<!-- Script Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const dataEl = document.getElementById('data-reports');
+        
+        const typesLabels = JSON.parse(dataEl.dataset.typesLabels || '[]');
+        const typesValues = JSON.parse(dataEl.dataset.typesValues || '[]');
+        const critiques = parseInt(dataEl.dataset.critiques) || 0;
+        const avertissements = parseInt(dataEl.dataset.avertissements) || 0;
+        const infos = parseInt(dataEl.dataset.infos) || 0;
+
+        // Graphique 1 : Camembert des Équipements
+        const ctxTypes = document.getElementById('chartTypes').getContext('2d');
+        new Chart(ctxTypes, {
+            type: 'doughnut',
+            data: {
+                labels: typesLabels,
+                datasets: [{
+                    data: typesValues,
+                    backgroundColor: ['#0d6efd', '#0dcaf0', '#198754', '#ffc107', '#dc3545', '#6c757d']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // Graphique 2 : Histogramme des Alertes
+        const ctxAlertes = document.getElementById('chartAlertes').getContext('2d');
+        new Chart(ctxAlertes, {
+            type: 'bar',
+            data: {
+                labels: ['Critique', 'Avertissement', 'Info'],
+                datasets: [{
+                    label: "Nombre d'événements",
+                    data: [critiques, avertissements, infos],
+                    backgroundColor: ['#dc3545', '#ffc107', '#0dcaf0']
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+        });
+    });
+</script>
+{% endblock %}
