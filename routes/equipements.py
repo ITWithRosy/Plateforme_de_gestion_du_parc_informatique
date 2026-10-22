@@ -97,7 +97,6 @@ def ajouter_equipement():
 
     return redirect(url_for('equipements.equipements'))
 
-
 @equipements_bp.route('/equipements/supprimer/<int:id>', methods=['POST'])
 @login_required
 @admin_required

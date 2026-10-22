@@ -12,8 +12,6 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-
-    <!-- BARRE NAVIGALE SÉCURISÉE -->
     <aside class="sidebar">
         <div class="brand d-flex align-items-center justify-content-center px-3 py-3 border-bottom border-secondary mb-3" style="border-color: rgba(255, 255, 255, 0.1) !important;">
             <a href="{{ url_for('dashboard.dashboard') }}" class="d-flex align-items-center text-decoration-none">
@@ -113,8 +111,6 @@
                                 </div>
                             </a>
                         </li>
-
-                        <!-- Masqué si non-administrateur -->
                         {% if current_user.is_authenticated and current_user.role and current_user.role.nomRole == 'Administrateur' %}
                         <li>
                             <a class="dropdown-item d-flex align-items-start py-2 px-2 rounded" href="{{ url_for('taches.taches') }}">

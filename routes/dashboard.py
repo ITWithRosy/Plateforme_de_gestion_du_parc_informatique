@@ -18,7 +18,6 @@ dashboard_bp = Blueprint('dashboard', __name__)
 @dashboard_bp.route('/dashboard')
 @login_required
 def dashboard():
-    """Agrège les données en temps réel de Zabbix, pfSense et BDD pour le tableau de bord."""
     # Récupération des données d'infrastructure Zabbix
     try:
         hosts_zabbix = obtenir_statut_hotes() or []

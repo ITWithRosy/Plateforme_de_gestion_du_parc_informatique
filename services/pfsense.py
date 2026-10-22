@@ -8,25 +8,21 @@ from dotenv import load_dotenv
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 load_dotenv(dotenv_path='.env')
-
 PFSENSE_URL = os.getenv('PFSENSE_URL')
 PFSENSE_API_KEY = os.getenv('PFSENSE_API_KEY')
 
 if PFSENSE_API_KEY:
     PFSENSE_API_KEY = PFSENSE_API_KEY.strip().strip("'").strip('"')
 
-
 def _normalize_url(url):
-    """S'assure que l'URL pfSense est correctement formatée sans slash final."""
     parsed = urllib.parse.urlparse(str(url).strip())
     if not parsed.scheme:
         url = f"http://{url.strip()}"
         parsed = urllib.parse.urlparse(url)
     return parsed.geturl().rstrip('/')
 
-
+#Exécute la requête HTTP REST vers l'API V2 de pfSense.
 def _try_request(url, endpoint, method="GET", payload=None):
-    """Exécute la requête HTTP REST vers l'API V2 de pfSense."""
     target = f"{url}/api/v2/{endpoint.lstrip('/')}"
     headers = {
         "Content-Type": "application/json",
@@ -38,7 +34,6 @@ def _try_request(url, endpoint, method="GET", payload=None):
         "timeout": 15,
         "allow_redirects": False
     }
-
     if method == "POST":
         kwargs["json"] = payload
         response = requests.post(target, **kwargs)
@@ -48,12 +43,10 @@ def _try_request(url, endpoint, method="GET", payload=None):
     response.raise_for_status()
     return response.json()
 
-
+#sécurité pour l'envoi de requêtes vers l'API pfSense.
 def _pfsense_request(endpoint, method="GET", payload=None):
-    """sécurité pour l'envoi de requêtes vers l'API pfSense."""
     if not PFSENSE_URL or not PFSENSE_API_KEY:
         return None
-
     normalized_url = _normalize_url(PFSENSE_URL)
 
     try:
@@ -66,9 +59,8 @@ def _pfsense_request(endpoint, method="GET", payload=None):
 
     return None
 
-
+#Récupère l'état d'activité des interfaces réseau depuis pfSense.
 def obtenir_statut_pfsense():
-    """Récupère l'état d'activité des interfaces réseau (WAN / LAN) depuis pfSense."""
     statut_default = {
         "connected": False,
         "wan_status": "DOWN",
@@ -76,12 +68,11 @@ def obtenir_statut_pfsense():
         "vpn_users": 0,
         "blocked_today": 0
     }
-
     if not PFSENSE_URL or not PFSENSE_API_KEY:
         return statut_default
 
     interfaces = _pfsense_request("status/interfaces")
-
+    
     if interfaces is not None:
         wan_status = "DOWN"
         lan_status = "DOWN"
@@ -105,8 +96,8 @@ def obtenir_statut_pfsense():
         }
     return statut_default
 
+#Récupère et filtre les événements système et pannes critiques de pfSense.
 def obtenir_alertes_pfsense():
-    """Récupère et filtre les événements système et pannes critiques de pfSense."""
     logs = _pfsense_request("status/logs/system")
     if not logs or not isinstance(logs, list):
         return []
@@ -129,7 +120,6 @@ def obtenir_alertes_pfsense():
         "rc.bootup",
         "attempt to query",
     ]
-
     for log in logs:
         message = log.get("text", log.get("message", ""))
         message_lower = message.lower()
@@ -146,5 +136,4 @@ def obtenir_alertes_pfsense():
 
         if len(alertes) >= 5:
             break
-
     return alertes

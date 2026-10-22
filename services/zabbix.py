@@ -10,23 +10,21 @@ ZABBIX_TOKEN = os.getenv('ZABBIX_TOKEN')
 if ZABBIX_TOKEN:
     ZABBIX_TOKEN = ZABBIX_TOKEN.strip().strip("'").strip('"')
 
+#Appel API JSON-RPC au serveur Zabbix avec jetons d'accès.
 def _zabbix_request(method, params, request_id=1):
-    """Appel API JSON-RPC au serveur Zabbix avec jetons d'accès."""
+
     if not ZABBIX_URL or not ZABBIX_TOKEN:
         return None
-
     payload = {
         "jsonrpc": "2.0",
         "method": method,
         "params": params,
         "id": request_id,
     }
-
     headers = {
         "Content-Type": "application/json-rpc",
         "Authorization": f"Bearer {ZABBIX_TOKEN}"
     }
-
     try:
         response = requests.post(ZABBIX_URL, json=payload, headers=headers, timeout=5)
         response.raise_for_status()
@@ -37,8 +35,8 @@ def _zabbix_request(method, params, request_id=1):
     except Exception:
         return None
 
+#Récupère les hôtes supervisés ainsi que leurs métriques instantanées.
 def obtenir_statut_hotes():
-    """Récupère les hôtes supervisés ainsi que leurs métriques CPU/RAM instantanées."""
     params = {
         "output": ["hostid", "host", "name", "status"],
         "selectInterfaces": ["ip", "available", "type"],
@@ -48,7 +46,7 @@ def obtenir_statut_hotes():
     resultat = _zabbix_request("host.get", params, request_id=1)
     if resultat is None:
         return []
-
+    
     hotes = []
     for item in resultat:
         ip = "N/A"
@@ -105,11 +103,10 @@ def obtenir_statut_hotes():
             "cpu": cpu_val,
             "ram": ram_val
         })
-
     return hotes
 
+#Interroge Zabbix pour remonter les problèmes actifs et synchronise la BDD localement.
 def obtenir_alertes_actives():
-    """Interroge Zabbix pour remonter les problèmes actifs et synchronise la BDD localement."""
     params = {
         "output": ["eventid", "name", "severity", "clock"],
         "selectHosts": ["hostid", "name", "host"],

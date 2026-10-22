@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 from models import db
 
 class TacheAutomatisee(db.Model):
-    """Modèle représentant les tâches automatiques et scripts de maintenance."""
     __tablename__ = 'taches_automatisees'
 
     idTache = db.Column(db.Integer, primary_key=True, autoincrement=True)

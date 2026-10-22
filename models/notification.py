@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 from models import db
 
 class Notification(db.Model):
-    """Modèle gérant l'historique d'envoi des notifications d'alertes."""
     __tablename__ = 'notifications'
 
     idNotification = db.Column(db.Integer, primary_key=True, autoincrement=True)

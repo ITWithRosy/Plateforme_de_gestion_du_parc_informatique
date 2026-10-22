@@ -4,7 +4,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from models import db
 
 class Utilisateur(db.Model, UserMixin):
-    """Modèle de gestion des comptes utilisateurs et authentification."""
     __tablename__ = 'utilisateurs'
 
     idUtilisateur = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -19,16 +18,16 @@ class Utilisateur(db.Model, UserMixin):
     idRole = db.Column(db.Integer, db.ForeignKey('roles.idRole'), nullable=False)
     role = db.relationship('Role', backref='utilisateurs')
 
+#Hachage du mot de passe avant enregistrement en base de données.
     def set_password(self, password):
-        """Hache le mot de passe avant enregistrement en base de données."""
         self.motDePasse = generate_password_hash(password)
 
     def check_password(self, password):
-        """Vérifie la correspondance du mot de passe saisi avec le hachage."""
         return check_password_hash(self.motDePasse, password)
+    
 
     def get_id(self):
-        """Retourne l'identifiant sous forme de chaîne pour Flask-Login."""
+        #Retourne l'identifiant sous forme de chaîne pour Flask-Login.
         return str(self.idUtilisateur)
 
     def __repr__(self):

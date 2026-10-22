@@ -2,11 +2,8 @@ from functools import wraps
 from flask import flash, redirect, url_for
 from flask_login import current_user
 
+#Décorateur de sécurité restreignant l'accès d'une route aux seuls utilisateurs possédant le rôle Administrateur.
 def admin_required(f):
-    """
-    Décorateur de sécurité restreignant l'accès d'une route 
-    aux seuls utilisateurs possédant le rôle Administrateur.
-    """
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or current_user.role.nomRole != 'Administrateur':

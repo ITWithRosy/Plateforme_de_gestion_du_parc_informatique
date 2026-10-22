@@ -3,14 +3,11 @@ import socket
 import webbrowser
 from threading import Timer
 from dotenv import load_dotenv
-
 from flask import Flask, request
 from flask_login import LoginManager, current_user
-
 from models import db
 from models.role import Role
 from models.utilisateur import Utilisateur
-
 from routes.alertes import alertes_bp
 from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
@@ -19,7 +16,6 @@ from routes.journal import journal_bp, logger_action
 from routes.rapports import rapports_bp
 from routes.taches import taches_bp
 from routes.utilisateurs import utilisateurs_bp
-
 
 app = Flask(__name__)
 load_dotenv()
@@ -40,7 +36,6 @@ login_manager.login_view = 'auth.login'
 
 @login_manager.user_loader
 def load_user(user_id):
-    """Charge l'utilisateur actuellement connecté via son ID."""
     return db.session.get(Utilisateur, int(user_id))
 
 # Initialisation de la base de données et des rôles par défaut au démarrage
@@ -61,7 +56,6 @@ with app.app_context():
 # Traçabilité automatique des accès aux sections principales
 @app.after_request
 def tracer_navigation(response):
-    """Enregistre les accès aux sections principales dans le journal d'audit."""
     if response.status_code == 200 and request.endpoint and request.method == 'GET':
         if current_user and current_user.is_authenticated:
             endpoints_a_tracer = {
@@ -72,11 +66,9 @@ def tracer_navigation(response):
                 'utilisateurs.utilisateurs': ('Consultation Utilisateurs', "Accès à la gestion des comptes"),
                 'taches.taches': ('Consultation Tâches', "Accès aux tâches automatisées")
             }
-            
             if request.endpoint in endpoints_a_tracer:
                 action, desc = endpoints_a_tracer[request.endpoint]
                 logger_action(action=action, description=desc)
-
     return response
 
 # Enregistrement des Blueprints (Routes)
@@ -89,8 +81,8 @@ app.register_blueprint(rapports_bp)
 app.register_blueprint(utilisateurs_bp)
 app.register_blueprint(journal_bp)
 
+#Détermine l'adresse IP locale active de la machine hôte.
 def get_local_ip():
-    """Détermine l'adresse IP locale active de la machine hôte."""
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         s.connect(('10.255.255.255', 1))
@@ -102,7 +94,6 @@ def get_local_ip():
     return ip
 
 def open_browser():
-    """Ouvre automatiquement le navigateur sur l'adresse du serveur."""
     ip_actuelle = get_local_ip()
     webbrowser.open(f'https://{ip_actuelle}:5000/')
 
